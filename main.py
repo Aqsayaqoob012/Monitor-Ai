@@ -1,9 +1,15 @@
 import cv2
 from ultralytics import YOLO
-from HeadPose import get_head_pose  # IMPORT
+from HeadPose import get_head_pose
 
+# ================= LOAD MODEL =================
 model = YOLO("best.pt")
 
+# ================= DEFINE CLASSES =================
+PHONE_CLASS = 1
+PERSON_CLASS = 3
+
+# ================= CAMERA =================
 cap = cv2.VideoCapture(0)
 
 while True:
@@ -13,7 +19,7 @@ while True:
 
     frame = cv2.flip(frame, 1)
 
-    # ================= YOLO =================
+    # ================= YOLO DETECTION =================
     results = model(frame)
 
     for r in results:
@@ -22,27 +28,37 @@ while True:
             conf = float(box.conf[0])
             x1, y1, x2, y2 = map(int, box.xyxy[0])
 
+            # ================= LABEL LOGIC =================
             label = "Unknown"
 
-            if cls == 0:
+            if cls == PHONE_CLASS:
                 label = "Phone"
-            elif cls == 1:
+            elif cls == PERSON_CLASS:
                 label = "Person"
 
-            cv2.rectangle(frame, (x1,y1), (x2,y2), (0,255,0), 2)
-            cv2.putText(frame, f"{label} {conf:.2f}", (x1,y1-10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
+            # ================= DRAW =================
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(frame, f"{label} {conf:.2f}",
+                        (x1, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.6,
+                        (0, 255, 0),
+                        2)
 
     # ================= HEAD POSE =================
     pose = get_head_pose(frame)
 
     text = f"{pose['direction']} | Away: {pose['away_seconds']}s"
-    cv2.putText(frame, text, (20,50),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,255), 2)
+    cv2.putText(frame, text, (20, 50),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
     if pose["alert"]:
-        cv2.putText(frame, "ALERT: LOOKING AWAY!", (20,100),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 3)
+        cv2.putText(frame, "ALERT: LOOKING AWAY!",
+                    (20, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (0, 0, 255),
+                    3)
 
     # ================= SHOW =================
     cv2.imshow("Cheating Guard AI", frame)
@@ -50,5 +66,6 @@ while True:
     if cv2.waitKey(1) & 0xFF == 27:
         break
 
+# ================= RELEASE =================
 cap.release()
 cv2.destroyAllWindows()
